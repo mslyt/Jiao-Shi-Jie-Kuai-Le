@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>节日刮刮乐 - 教师节快乐</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 50%, #ff6b6b 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        /* 彩票主体 */
+        .ticket {
+            background: linear-gradient(145deg, #fff9e6, #fff);
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+            border: 3px solid #ffd700;
+        }
+
+        /* 锯齿边缘效果 */
+        .ticket::before, .ticket::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 20px;
+            background-image: radial-gradient(circle at 10px 10px, transparent 10px, #fff9e6 11px);
+            background-size: 20px 20px;
+        }
+
+        .ticket::before {
+            top: -10px;
+            background-image: radial-gradient(circle at 10px 0px, transparent 10px, #fff 11px);
+        }
+
+        .ticket::after {
+            bottom: -10px;
+            background-image: radial-gradient(circle at 10px 10px, transparent 10px, #fff 11px);
+        }
+
+        .ticket-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .ticket-header h1 {
+            font-size: 1.8rem;
+            color: #e74c3c;
+            text-shadow: 1px 1px 0 #ffd700;
+            margin-bottom: 0.3rem;
+        }
+
+        .ticket-header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* 3x3 网格 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .cell {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+            border: 2px solid #eee;
+        }
+
+        .cell.revealed {
+            border-color: #ffd700;
+            box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .prize {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 4px;
+            background: linear-gradient(135deg, #fff, #fef9e7);
+            color: #333;
+            line-height: 1.3;
+        }
+
+        .prize.flower { color: #e91e63; font-size: 0.95rem; }
+        .prize.grand { color: #ff6b00; font-size: 0.95rem; }
+        .prize.normal { color: #999; font-size: 0.8rem; }
+
+        .scratch-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+            border-radius: 10px;
+        }
+
+        /* 按钮 */
+        .refresh-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #e74c3c, #ff6b6b);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1rem;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 弹窗 */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+
+        .overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            color: #e74c3c;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .modal p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .modal-btn {
+            padding: 0.7rem 2rem;
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* 音乐控制 */
+        .music-control {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 400px) {
+            .ticket { padding: 1.5rem 1rem; }
+            .ticket-header h1 { font-size: 1.4rem; }
+            .prize { font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- BGM -->
+    <audio id="bgm" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+    <div class="music-control" id="musicToggle">🎵</div>
+
+    <div class="container">
+        <div class="ticket">
+            <div class="ticket-header">
+                <h1>🎉 节日刮刮乐 🎉</h1>
+                <p>刮开涂层，看看你的惊喜！</p>
+            </div>
+            <div class="grid" id="grid"></div>
+            <button class="refresh-btn" onclick="initGame()">🎫 换一张彩票</button>
+            <a href="教师节导航页.html" class="back-link">← 返回导航页</a>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <h2>🎊 揭晓结果 🎊</h2>
+            <p id="resultText"></p>
+            <button class="modal-btn" onclick="closeModal()">太棒了！</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== 奖品配置 =====
+        // 1个花束 + 1个神秘大奖 + 7个教师节快乐 = 9格
+        function generatePrizes() {
+            const prizes = [
+                { text: '💐\n花束', type: 'flower' },
+                { text: '🎁\n神秘大奖', type: 'grand' }
+            ];
+            for (let i = 0; i < 7; i++) {
+                prizes.push({ text: '教师节快乐', type: 'normal' });
+            }
+            // 随机打乱
+            return prizes.sort(() => Math.random() - 0.5);
+        }
+
+        // ===== 游戏状态 =====
+        let revealedCount = 0;
+        const totalCells = 9;
+        let gameOver = false;
+
+        // ===== 初始化 =====
+        function initGame() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            revealedCount = 0;
+            gameOver = false;
+            document.getElementById('overlay').classList.remove('active');
+
+            const prizes = generatePrizes();
+
+            prizes.forEach((prize, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+
+                const prizeDiv = document.createElement('div');
+                prizeDiv.className = `prize ${prize.type}`;
+                prizeDiv.style.whiteSpace = 'pre-line';
+                prizeDiv.textContent = prize.text;
+
+                const canvas = document.createElement('canvas');
+                canvas.className = 'scratch-canvas';
+
+                cell.appendChild(prizeDiv);
+                cell.appendChild(canvas);
+                grid.appendChild(cell);
+
+                setupCanvas(canvas, cell, prize);
+            });
+        }
+
+        // ===== 刮奖逻辑 =====
+        function setupCanvas(canvas, cell, prize) {
+            const ctx = canvas.getContext('2d');
+            const rect = cell.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            // 绘制涂层
+            ctx.fillStyle = '#b0bec5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 斜纹
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 2;
+            for (let i = -canvas.width; i < canvas.width * 2; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i + canvas.height, canvas.height);
+                ctx.stroke();
+            }
+            // 文字
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('刮开', canvas.width / 2, canvas.height / 2);
+
+            let isDrawing = false;
+            let revealed = false;
+
+            function getPos(e) {
+                const r = canvas.getBoundingClientRect();
+                if (e.touches) {
+                    return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+                }
+                return { x: e.clientX - r.left, y: e.clientY - r.top };
+            }
+
+            function startDraw(e) {
+                if (revealed || gameOver) return;
+                e.preventDefault();
+                isDrawing = true;
+                const pos = getPos(e);
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function draw(e) {
+                if (!isDrawing || revealed || gameOver) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function stopDraw() {
+                if (!isDrawing || revealed || gameOver) return;
+                isDrawing = false;
+                checkReveal();
+            }
+
+            function checkReveal() {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = imageData.data;
+                let transparent = 0;
+                for (let i = 3; i < pixels.length; i += 4) {
+                    if (pixels[i] === 0) transparent++;
+                }
+                const ratio = transparent / (pixels.length / 4);
+                if (ratio > 0.35) {
+                    revealed = true;
+                    canvas.style.transition = 'opacity 0.4s';
+                    canvas.style.opacity = '0';
+                    setTimeout(() => canvas.remove(), 400);
+                    cell.classList.add('revealed');
+                    revealedCount++;
+                    checkGameOver();
+                }
+            }
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+            canvas.addEventListener('touchstart', startDraw, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stopDraw);
+        }
+
+        // ===== 游戏结束判定 =====
+        function checkGameOver() {
+            if (revealedCount >= totalCells && !gameOver) {
+                gameOver = true;
+                setTimeout(() => {
+                    document.getElementById('resultText').innerHTML = 
+                        '💐 <strong>花束</strong> × 1<br>🎁 <strong>神秘大奖</strong> × 1<br>📜 教师节快乐 × 7<br><br>感谢您的参与，祝您节日快乐！🎉';
+                    document.getElementById('overlay').classList.add('active');
+                }, 600);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        // ===== 音乐控制 =====
+        const bgm = document.getElementById('bgm');
+        const musicToggle = document.getElementById('musicToggle');
+        let isPlaying = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const p = bgm.play();
+            if (p !== undefined) {
+                p.then(() => { isPlaying = true; }).catch(() => { isPlaying = false; });
+            }
+        });
+
+        musicToggle.addEventListener('click', () => {
+            if (isPlaying) { bgm.pause(); musicToggle.textContent = '🔇'; }
+            else { bgm.play(); musicToggle.textContent = '🎵'; }
+            isPlaying = !isPlaying;
+        });
+
+        // 启动
+        initGame();
+    </script>
+</body>
+</html>
