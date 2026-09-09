@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师节快乐 - 专属导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 飘落的纸张动画 */
+        .confetti {
+            position: fixed;
+            top: -20px;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            padding: 3rem 1rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: #fff;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 网格布局 */
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        /* 卡片 */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 贺卡单独一行居中 */
+        .card-featured {
+            max-width: 500px;
+            margin: 0 auto 2rem;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #764ba2;
+            margin-bottom: 0.8rem;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        /* 音乐控制 */
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .music-control:hover {
+            transform: scale(1.1);
+        }
+
+        .music-control .icon {
+            font-size: 1.5rem;
+        }
+
+        .music-control.playing .icon::before { content: '🎵'; }
+        .music-control.paused .icon::before { content: '🔇'; }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255,255,255,0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景音乐（占位，后续自行替换 src） -->
+    <audio id="bgm" loop autoplay>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 音乐控制按钮 -->
+    <div class="music-control playing" id="musicToggle">
+        <span class="icon"></span>
+    </div>
+
+    <!-- 飘落纸张容器 -->
+    <div id="confettiContainer"></div>
+
+    <header class="header">
+        <h1>🎉 教师节快乐 🎉</h1>
+        <p>感谢您的辛勤付出，祝您节日快乐！</p>
+    </header>
+
+    <main class="container">
+        <!-- 第一行：教师节贺卡（单独一行） -->
+        <div class="card card-featured">
+            <div class="card-icon">💌</div>
+            <h2 class="card-title">教师节贺卡</h2>
+            <p class="card-desc">点击制作专属电子贺卡，写下对老师的感恩与祝福，让心意跨越距离传递。</p>
+            <a href="card_main.html" class="btn">制作贺卡</a>
+        </div>
+
+        <!-- 第二行：三个小游戏（三等分） -->
+        <div class="grid grid-3">
+            <div class="card">
+                <div class="card-icon">🔢</div>
+                <h2 class="card-title">2048挑战</h2>
+                <p class="card-desc">经典数字合并益智游戏，滑动方块，挑战合成 2048！</p>
+                <a href="game_2048.html" class="btn">开始游戏</a>
+            </div>
+            <div class="card">
+                <div class="card-icon">🐦</div>
+                <h2 class="card-title">飞翔的小鸟</h2>
+                <p class="card-desc">点击屏幕控制小鸟飞行，避开管道障碍，看看你能飞多远。</p>
+                <a href="game_flappybird.html" class="btn">开始游戏</a>
+            </div>
+            <div class="card">
+                <div class="card-icon">🦖</div>
+                <h2 class="card-title">恐龙跑酷</h2>
+                <p class="card-desc">Chrome 经典断网小恐龙跑酷游戏，跳跃躲避仙人掌，挑战最高分。</p>
+                <a href="game_dino.html" class="btn">开始游戏</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 教师节专属导航页 | 感恩老师，伴我成长</p>
+    </footer>
+
+    <script>
+        // 音乐控制
+        const bgm = document.getElementById('bgm');
+        const musicToggle = document.getElementById('musicToggle');
+        let isPlaying = true;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const playPromise = bgm.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    isPlaying = true;
+                    musicToggle.classList.add('playing');
+                    musicToggle.classList.remove('paused');
+                }).catch(() => {
+                    isPlaying = false;
+                    musicToggle.classList.add('paused');
+                    musicToggle.classList.remove('playing');
+                });
+            }
+        });
+
+        musicToggle.addEventListener('click', () => {
+            if (isPlaying) {
+                bgm.pause();
+                musicToggle.classList.remove('playing');
+                musicToggle.classList.add('paused');
+            } else {
+                bgm.play();
+                musicToggle.classList.remove('paused');
+                musicToggle.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                musicToggle.click();
+            }
+        });
+
+        // 飘落纸张动画
+        function createConfetti() {
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                const size = Math.random() * 10 + 5;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 5 + 5;
+                const delay = Math.random() * 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = size + 'px';
+                confetti.style.height = size + 'px';
+                confetti.style.backgroundColor = color;
+                confetti.style.left = left + 'vw';
+                confetti.style.animation = `fall ${duration}s linear ${delay}s infinite`;
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                container.appendChild(confetti);
+            }
+        }
+        createConfetti();
+    </script>
+</body>
+</html>
