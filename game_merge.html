@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>合成大蛋糕 · 2048</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(135deg,#fce4ec 0%,#f3e5f5 50%,#e8eaf6 100%);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:16px;color:#4a148c;overflow:hidden;
+  }
+  .title{font-size:28px;font-weight:900;letter-spacing:2px;margin-bottom:6px;text-align:center;
+    background:linear-gradient(90deg,#e91e63,#7b1fa2);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{font-size:12px;color:#8e6aa8;margin-bottom:14px;text-align:center;}
+  .hud{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;justify-content:center;}
+  .chip{background:rgba(255,255,255,.75);backdrop-filter:blur(6px);border-radius:14px;padding:8px 14px;
+    box-shadow:0 4px 14px rgba(142,36,170,.12);text-align:center;min-width:78px;}
+  .chip b{display:block;font-size:19px;font-weight:900;color:#6a1b9a;}
+  .chip span{font-size:10px;color:#9e7fb5;}
+  .board{
+    --gap:10px;--cols:4;
+    width:min(92vw,420px);aspect-ratio:1/1;
+    background:rgba(255,255,255,.55);border-radius:18px;padding:var(--gap);
+    display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-auto-rows:1fr;gap:var(--gap);
+    box-shadow:0 10px 30px rgba(142,36,170,.18);position:relative;touch-action:none;
+  }
+  .cell{background:rgba(255,255,255,.5);border-radius:12px;}
+  .tile{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:12px;font-weight:900;transition:transform .15s ease,opacity .15s ease;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);will-change:transform;font-size:clamp(10px,4.2vw,15px);}
+  .tile .ico{font-size:clamp(22px,8vw,34px);line-height:1;}
+  .tile .name{font-size:.62em;margin-top:2px;font-weight:700;opacity:.85;}
+  .tile.born{animation:pop .22s ease;}
+  .tile.merged{animation:bounce .28s ease;}
+  @keyframes pop{0%{transform:var(--pos) scale(0);}100%{transform:var(--pos) scale(1);}}
+  @keyframes bounce{0%{transform:var(--pos) scale(1);}45%{transform:var(--pos) scale(1.14);}100%{transform:var(--pos) scale(1);}}
+  .ctrl{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center;}
+  button{font:inherit;font-weight:800;font-size:14px;color:#fff;border:0;cursor:pointer;
+    padding:10px 18px;border-radius:14px;box-shadow:0 5px 14px rgba(142,36,170,.28);
+    background:linear-gradient(135deg,#ec407a,#8e24aa);transition:transform .12s;}
+  button:active{transform:scale(.96);}
+  .tip{font-size:11px;color:#9e7fb5;margin-top:12px;text-align:center;max-width:420px;line-height:1.6;}
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(40,10,60,.45);backdrop-filter:blur(4px);z-index:50;}
+  .overlay.show{display:flex;}
+  .panel{background:#fff;border-radius:22px;padding:26px 30px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25);
+    animation:pop .25s ease;}
+  .panel h2{font-size:24px;margin-bottom:6px;}
+  .panel p{color:#7b5b8a;margin-bottom:16px;}
+  .particle{position:absolute;pointer-events:none;border-radius:50%;will-change:transform,opacity;}
+</style>
+</head>
+<body>
+  <div class="title">🎂 合成大蛋糕</div>
+  <div class="sub">2048 玩法 · 方向键 / 滑动 移动 · 合并出 👑 皇冠即胜利</div>
+  <div class="hud">
+    <div class="chip"><b id="score">0</b><span>得分</span></div>
+    <div class="chip"><b id="best">0</b><span>最高分</span></div>
+    <div class="chip"><b id="top">🧁</b><span>当前顶级</span></div>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="ctrl">
+    <button id="btnUndo">↩ 撤销</button>
+    <button id="btnRestart">🔄 重新开始</button>
+  </div>
+  <div class="tip">电脑：方向键 / WASD 移动　手机：在棋盘上向四个方向滑动<br>两个相同蛋糕相撞会合成更高一级，每次移动后会随机出现一颗新蛋糕。</div>
+  <div class="overlay" id="overlay"><div class="panel">
+    <h2 id="ovTitle">游戏结束</h2><p id="ovDesc"></p>
+    <button id="ovBtn">再来一局</button>
+  </div></div>
+
+<script>
+(() => {
+  const SIZE = 4;
+  const TIERS = [
+    {lv:1,name:'纸杯蛋糕',ico:'🧁',c1:'#fff3e0',c2:'#ffe0b2',text:'#8d6e63'},
+    {lv:2,name:'小蛋糕',  ico:'🍰',c1:'#fce4ec',c2:'#f8bbd0',text:'#ad1457'},
+    {lv:3,name:'生日蛋糕',ico:'🎂',c1:'#f3e5f5',c2:'#ce93d8',text:'#6a1b9a'},
+    {lv:4,name:'甜甜圈',  ico:'🍩',c1:'#ede7f6',c2:'#b39ddb',text:'#4527a0'},
+    {lv:5,name:'派',      ico:'🥧',c1:'#e8f5e9',c2:'#a5d6a7',text:'#2e7d32'},
+    {lv:6,name:'布丁',    ico:'🍮',c1:'#e3f2fd',c2:'#90caf9',text:'#1565c0'},
+    {lv:7,name:'礼物蛋糕',ico:'🎁',c1:'#fff8e1',c2:'#ffd54f',text:'#e65100'},
+    {lv:8,name:'皇冠蛋糕',ico:'👑',c1:'#fff9c4',c2:'#ffe082',text:'#c79100'},
+  ];
+  const tierOf = lv => TIERS[Math.min(lv,TIERS.length)-1];
+
+  const boardEl = document.getElementById('board');
+  const scoreEl = document.getElementById('score');
+  const bestEl  = document.getElementById('best');
+  const topEl   = document.getElementById('top');
+  const overlay = document.getElementById('overlay');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovDesc  = document.getElementById('ovDesc');
+
+  let grid, score, best = +localStorage.getItem('cake2048_best')||0, history=[];
+  let lock = false, won = false;
+  bestEl.textContent = best;
+
+  function emptyGrid(){return Array.from({length:SIZE},()=>Array(SIZE).fill(0));}
+
+  function newGame(){
+    grid = emptyGrid(); score = 0; won = false; history=[];
+    spawn(); spawn();
+    render(); hideOverlay();
+  }
+
+  function spawn(){
+    const empty=[];
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(!grid[r][c])empty.push([r,c]);
+    if(!empty.length)return;
+    const [r,c]=empty[Math.floor(Math.random()*empty.length)];
+    grid[r][c]=1;
+    return [r,c];
+  }
+
+  // 核心：把一行向左压缩合并（2048 语义）
+  function mergeRow(row){
+    let arr = row.filter(v=>v);          // 去零
+    let scoreGain = 0, merged = false;
+    for(let i=0;i<arr.length-1;i++){
+      if(arr[i] && arr[i]===arr[i+1]){
+        arr[i]++; arr.splice(i+1,1);
+        scoreGain += 1<<(arr[i]+1);     // 1<<(lv+1)：lv2=4,lv3=8...
+        merged = true;
+      }
+    }
+    while(arr.length<SIZE)arr.push(0);
+    return {row:arr,scoreGain,merged};
+  }
+
+  function move(dir){
+    if(lock)return;
+    const prev = grid.map(r=>r.slice());
+    let totalGain=0, anyMoved=false;
+    for(let i=0;i<SIZE;i++){
+      let line;
+      if(dir==='left')  line=grid[i].slice();
+      if(dir==='right') line=grid[i].slice().reverse();
+      if(dir==='up')    line=grid.map(r=>r[i]);
+      if(dir==='down')  line=grid.map(r=>r[i]).reverse();
+      const {row:merged,scoreGain} = mergeRow(line);
+      let out = dir==='right'||dir==='down'? merged.slice().reverse(): merged.slice();
+      totalGain+=scoreGain;
+      if(dir==='left'||dir==='right'){
+        if(grid[i].some((v,j)=>v!==out[j]))anyMoved=true;
+        grid[i]=out;
+      } else {
+        if(grid.some((r,j)=>r[i]!==out[j]))anyMoved=true;
+        for(let j=0;j<SIZE;j++)grid[j][i]=out[j];
+      }
+    }
+    if(!anyMoved){ render(prev,true); return; }
+    score += totalGain; if(score>best){best=score;localStorage.setItem('cake2048_best',best);}
+    history.push(prev);
+    const born = spawn();
+    render(prev,false,born);
+    if(totalGain) spawnParticles(totalGain);
+    checkEnd();
+  }
+
+  function undo(){
+    if(!history.length)return;
+    grid=history.pop(); score=Math.max(0,score); render();
+  }
+
+  function canMove(){
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      if(!grid[r][c])return true;
+      if(c+1<SIZE && grid[r][c]===grid[r][c+1])return true;
+      if(r+1<SIZE && grid[r][c]===grid[r+1][c])return true;
+    }
+    return false;
+  }
+  function hasWon(){for(const r of grid)if(r.includes(8))return true;return false;}
+
+  function checkEnd(){
+    if(hasWon() && !won){won=true;setTimeout(()=>showOverlay('🎉 恭喜过关','你合成了皇冠蛋糕！'),420);}
+    else if(!canMove()){setTimeout(()=>showOverlay('游戏结束','没有可合并的蛋糕了'),420);}
+  }
+  function showOverlay(t,d){ovTitle.textContent=t;ovDesc.textContent=d+(score?'　最终得分 '+score:'');overlay.classList.add('show');}
+  function hideOverlay(){overlay.classList.remove('show');}
+
+  // ---------- 渲染 ----------
+  function cellRect(r,c){
+    const cs = getComputedStyle(boardEl);
+    const gap = parseFloat(cs.getPropertyValue('--gap'))||10;
+    const cols=SIZE;
+    const boardW = boardEl.clientWidth;
+    const cell = (boardW - gap*(cols+1))/cols;
+    return {x:gap+(cell+gap)*c, y:gap+(cell+gap)*r, size:cell};
+  }
+  function render(prev,noop,born){
+    scoreEl.textContent=score; bestEl.textContent=best;
+    let topLv=0; for(const r of grid)for(const v of r)if(v>topLv)topLv=v;
+    if(topLv){const t=tierOf(topLv);topEl.textContent=t.ico;}
+    boardEl.innerHTML='';
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){const d=document.createElement('div');d.className='cell';boardEl.appendChild(d);}
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      const v=grid[r][c]; if(!v)continue;
+      const t=tierOf(v); const {x,y,size}=cellRect(r,c);
+      const el=document.createElement('div'); el.className='tile';
+      const fromBorn = born && born[0]===r && born[1]===c;
+      const wasZero = prev && !prev[r][c] && v===1;
+      el.classList.add(fromBorn||wasZero?'born':'merged');
+      el.style.setProperty('--pos',`translate(${x}px,${y}px)`);
+      el.style.transform=`translate(${x}px,${y}px)`;
+      el.style.width=size+'px'; el.style.height=size+'px';
+      el.style.background=`linear-gradient(135deg,${t.c1},${t.c2})`;
+      el.style.color=t.text;
+      el.innerHTML=`<span class="ico">${t.ico}</span><span class="name">${t.name}</span>`;
+      boardEl.appendChild(el);
+    }
+  }
+
+  function spawnParticles(gain){
+    const colors=['#ec407a','#ab47bc','#7e57c2','#42a5f5','#66bb6a','#ffa726'];
+    for(let i=0;i<10;i++){
+      const p=document.createElement('div');p.className='particle';
+      const sz=6+Math.random()*8;
+      p.style.width=sz+'px';p.style.height=sz+'px';
+      p.style.background=colors[Math.floor(Math.random()*colors.length)];
+      p.style.left=(boardEl.clientWidth/2)+'px';p.style.top=(boardEl.clientHeight/2)+'px';
+      boardEl.appendChild(p);
+      const a=Math.random()*Math.PI*2, dist=40+Math.random()*70;
+      const dx=Math.cos(a)*dist, dy=Math.sin(a)*dist;
+      p.animate([{transform:`translate(0,0) scale(1)`,opacity:1},{transform:`translate(${dx}px,${dy}px) scale(0)`,opacity:0}],{duration:520+Math.random()*260,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>p.remove();
+    }
+  }
+
+  // ---------- 输入 ----------
+  document.addEventListener('keydown',e=>{
+    const k=e.key;
+    if(k==='ArrowLeft'||k==='a'||k==='A'){move('left');e.preventDefault();}
+    else if(k==='ArrowRight'||k==='d'||k==='D'){move('right');e.preventDefault();}
+    else if(k==='ArrowUp'||k==='w'||k==='W'){move('up');e.preventDefault();}
+    else if(k==='ArrowDown'||k==='s'||k==='S'){move('down');e.preventDefault();}
+    else if(k==='z'||k==='Z')undo();
+  });
+  let ts=null;
+  boardEl.addEventListener('pointerdown',e=>{ts={x:e.clientX,y:e.clientY};boardEl.setPointerCapture(e.pointerId);});
+  boardEl.addEventListener('pointerup',e=>{
+    if(!ts)return;
+    const dx=e.clientX-ts.x, dy=e.clientY-ts.y; const ax=Math.abs(dx), ay=Math.abs(dy);
+    if(Math.max(ax,ay)>24){ if(ax>ay)move(dx<0?'left':'right');else move(dy<0?'up':'down'); }
+    ts=null;
+  });
+  document.getElementById('btnRestart').addEventListener('click',newGame);
+  document.getElementById('btnUndo').addEventListener('click',undo);
+  document.getElementById('ovBtn').addEventListener('click',newGame);
+  window.addEventListener('resize',()=>render());
+
+  newGame();
+})();
+</script>
+</body>
+</html>
