@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>传教师节合影 - 血液内科专硕</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -22,64 +18,45 @@
 
         /* 飘落纸张动画 */
         .confetti {
-            position: fixed;
-            top: -20px;
-            z-index: 0;
-            pointer-events: none;
-            opacity: 0.8;
+            position: fixed; top: -20px; z-index: 0;
+            pointer-events: none; opacity: 0.8;
         }
-
         @keyframes fall {
             0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
             100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
         }
 
-        /* 头部 */
         .header {
             text-align: center;
             padding: 2.5rem 1rem 1.5rem;
-            position: relative;
-            z-index: 1;
+            position: relative; z-index: 1;
         }
-
         .header h1 {
             font-size: clamp(1.6rem, 4vw, 2.5rem);
-            color: #fff;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+            color: #fff; text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
             margin-bottom: 0.4rem;
         }
-
         .header p {
             font-size: 1rem;
             color: rgba(255,255,255,0.9);
             text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
         }
-
         .subtitle {
-            display: inline-block;
-            margin-top: 0.6rem;
-            padding: 0.3rem 1rem;
-            background: rgba(255,255,255,0.2);
-            border-radius: 20px;
-            font-size: 0.85rem;
+            display: inline-block; margin-top: 0.6rem;
+            padding: 0.3rem 1rem; background: rgba(255,255,255,0.2);
+            border-radius: 20px; font-size: 0.85rem;
             color: rgba(255,255,255,0.85);
         }
 
-        /* 主容器 */
         .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 1.5rem;
-            position: relative;
-            z-index: 1;
+            max-width: 1100px; margin: 0 auto;
+            padding: 1.5rem; position: relative; z-index: 1;
         }
 
-        /* 相册网格 */
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1.2rem;
-            margin-bottom: 2rem;
+            gap: 1.2rem; margin-bottom: 2rem;
         }
 
         .photo-slot {
@@ -87,93 +64,106 @@
             background: rgba(255,255,255,0.15);
             border: 2px dashed rgba(255,255,255,0.4);
             border-radius: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
             color: rgba(255,255,255,0.6);
-            transition: border-color 0.3s, background 0.3s;
+            transition: border-color 0.3s, background 0.3s, transform 0.2s;
+            overflow: hidden; position: relative;
         }
-
-        .photo-slot:hover {
-            border-color: rgba(255,255,255,0.7);
-            background: rgba(255,255,255,0.22);
+        .photo-slot.has-photo {
+            border: 2px solid rgba(255,255,255,0.6);
+            background: rgba(0,0,0,0.1);
+            cursor: zoom-in;
         }
-
-        .photo-slot .slot-icon {
-            font-size: 2rem;
-            margin-bottom: 0.4rem;
-            opacity: 0.7;
+        .photo-slot.has-photo:hover { transform: translateY(-4px); }
+        .photo-slot.has-photo img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
         }
-
-        .photo-slot .slot-text {
-            font-size: 0.85rem;
-            opacity: 0.8;
-        }
-
+        .photo-slot .slot-icon { font-size: 2rem; margin-bottom: 0.4rem; opacity: 0.7; }
+        .photo-slot .slot-text { font-size: 0.85rem; opacity: 0.8; }
         .photo-slot .slot-num {
-            font-size: 0.75rem;
-            opacity: 0.5;
-            margin-top: 0.2rem;
+            font-size: 0.75rem; opacity: 0.5; margin-top: 0.2rem;
         }
+        .photo-slot .caption {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 6px; background: linear-gradient(transparent, rgba(0,0,0,0.6));
+            color: #fff; font-size: 0.8rem; text-align: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .photo-slot.has-photo:hover .caption { opacity: 1; }
 
-        /* 底部 */
+        /* Lightbox 放大查看 */
+        .lightbox {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+            padding: 2rem;
+        }
+        .lightbox.active { opacity: 1; pointer-events: all; }
+        .lightbox img {
+            max-width: 90vw; max-height: 80vh;
+            border-radius: 12px; box-shadow: 0 10px 60px rgba(0,0,0,0.5);
+            transform: scale(0.9); transition: transform 0.3s;
+            object-fit: contain;
+        }
+        .lightbox.active img { transform: scale(1); }
+        .lightbox .lb-close {
+            position: absolute; top: 20px; right: 25px;
+            font-size: 2rem; color: #fff; cursor: pointer;
+            width: 44px; height: 44px; line-height: 40px; text-align: center;
+            border-radius: 50%; background: rgba(255,255,255,0.15);
+            transition: background 0.2s;
+        }
+        .lightbox .lb-close:hover { background: rgba(255,255,255,0.3); }
+        .lightbox .lb-caption {
+            position: absolute; bottom: 30px; left: 0; right: 0;
+            text-align: center; color: #fff; font-size: 1rem;
+        }
+        .lightbox .lb-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            font-size: 2rem; color: #fff; cursor: pointer;
+            width: 50px; height: 50px; line-height: 46px; text-align: center;
+            border-radius: 50%; background: rgba(255,255,255,0.15);
+            transition: background 0.2s; user-select: none;
+        }
+        .lightbox .lb-nav:hover { background: rgba(255,255,255,0.3); }
+        .lightbox .lb-prev { left: 20px; }
+        .lightbox .lb-next { right: 20px; }
+
         .footer {
-            text-align: center;
-            padding: 1.5rem;
-            position: relative;
-            z-index: 1;
+            text-align: center; padding: 1.5rem;
+            position: relative; z-index: 1;
         }
-
         .back-link {
-            display: inline-block;
-            padding: 0.6rem 1.5rem;
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 0.9rem;
+            display: inline-block; padding: 0.6rem 1.5rem;
+            background: rgba(255,255,255,0.2); color: #fff;
+            text-decoration: none; border-radius: 25px; font-size: 0.9rem;
             transition: background 0.3s;
         }
+        .back-link:hover { background: rgba(255,255,255,0.35); }
 
-        .back-link:hover {
-            background: rgba(255,255,255,0.35);
-        }
-
-        /* 音乐控制 */
         .music-control {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 100;
-            background: rgba(255,255,255,0.9);
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1.3rem;
+            position: fixed; top: 15px; right: 15px; z-index: 100;
+            background: rgba(255,255,255,0.9); border-radius: 50%;
+            width: 45px; height: 45px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1.3rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         @media (max-width: 768px) {
             .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
-            .photo-slot { border-radius: 10px; }
-            .photo-slot .slot-icon { font-size: 1.5rem; }
-            .photo-slot .slot-text { font-size: 0.75rem; }
+            .lightbox .lb-nav { width: 40px; height: 40px; font-size: 1.5rem; line-height: 36px; }
         }
     </style>
 </head>
 <body>
-    <!-- BGM -->
     <audio id="bgm" loop>
-        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=relaxing-mountains-rivers-123110.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
     </audio>
     <div class="music-control" id="musicToggle">🎵</div>
-
-    <!-- 飘落纸张容器 -->
     <div id="confettiContainer"></div>
 
     <header class="header">
@@ -183,46 +173,126 @@
     </header>
 
     <main class="container">
-        <div class="gallery" id="gallery">
-            <!-- JS 生成 12 个占位 -->
-        </div>
+        <div class="gallery" id="gallery"></div>
     </main>
 
+    <!-- Lightbox 放大查看 -->
+    <div class="lightbox" id="lightbox">
+        <span class="lb-close" id="lbClose">×</span>
+        <span class="lb-nav lb-prev" id="lbPrev">‹</span>
+        <span class="lb-nav lb-next" id="lbNext">›</span>
+        <img id="lbImg" src="" alt="">
+        <div class="lb-caption" id="lbCaption"></div>
+    </div>
 
+    <footer class="footer">
+        <a href="教师节导航页.html" class="back-link">← 返回导航页</a>
+    </footer>
 
     <script>
-        // 生成 12 个占位格
+        // ===== 照片数据：有 src 的显示真实图片，空的保留占位 =====
+        // 图片1/2/3 已加入，其余 9 张留占位，后续在后台补 src 即可
+        const PHOTOS = [
+            { src: 'https://github.com/mslyt/Jiao-Shi-Jie-Kuai-Le/blob/main/7f306dd9d59157b2ebd28bba8a090e56.jpg?raw=true', caption: '合影 01' },
+            { src: 'https://github.com/mslyt/Jiao-Shi-Jie-Kuai-Le/blob/main/cc1ce96db27bdb86855de0c3038e6325.jpg?raw=true', caption: '合影 02' },
+            { src: 'https://github.com/mslyt/Jiao-Shi-Jie-Kuai-Le/blob/main/103ad3fa2fbd54cf8fe54b9715b56f64.jpg?raw=true', caption: '合影 03' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+            { src: '', caption: '' },
+        ];
+
         const gallery = document.getElementById('gallery');
-        for (let i = 1; i <= 12; i++) {
+        const photoList = []; // 记录真实照片的索引，用于翻页
+
+        PHOTOS.forEach((p, i) => {
             const slot = document.createElement('div');
             slot.className = 'photo-slot';
-            slot.innerHTML = `
-                <span class="slot-icon">🖼️</span>
-                <span class="slot-text">待添加照片</span>
-                <span class="slot-num">#${String(i).padStart(2, '0')}</span>
-            `;
+            if (p.src) {
+                slot.classList.add('has-photo');
+                slot.innerHTML = `
+                    <img src="${p.src}" alt="${p.caption}" loading="lazy">
+                    <span class="caption">${p.caption}</span>
+                `;
+                photoList.push(i);
+                slot.addEventListener('click', () => openLightbox(i));
+            } else {
+                slot.innerHTML = `
+                    <span class="slot-icon">🖼️</span>
+                    <span class="slot-text">待添加照片</span>
+                    <span class="slot-num">#${String(i + 1).padStart(2, '0')}</span>
+                `;
+            }
             gallery.appendChild(slot);
+        });
+
+        // ===== Lightbox 逻辑 =====
+        const lightbox = document.getElementById('lightbox');
+        const lbImg = document.getElementById('lbImg');
+        const lbCaption = document.getElementById('lbCaption');
+        let currentIndex = 0;
+
+        function openLightbox(index) {
+            currentIndex = photoList.indexOf(index);
+            if (currentIndex === -1) return;
+            showImage();
+            lightbox.classList.add('active');
         }
 
-        // 音乐控制
+        function showImage() {
+            const realIndex = photoList[currentIndex];
+            const p = PHOTOS[realIndex];
+            lbImg.src = p.src;
+            lbCaption.textContent = `${p.caption} (${currentIndex + 1}/${photoList.length})`;
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+        }
+
+        function nextImage(e) {
+            if (e) e.stopPropagation();
+            currentIndex = (currentIndex + 1) % photoList.length;
+            showImage();
+        }
+
+        function prevImage(e) {
+            if (e) e.stopPropagation();
+            currentIndex = (currentIndex - 1 + photoList.length) % photoList.length;
+            showImage();
+        }
+
+        document.getElementById('lbClose').addEventListener('click', closeLightbox);
+        document.getElementById('lbNext').addEventListener('click', nextImage);
+        document.getElementById('lbPrev').addEventListener('click', prevImage);
+        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('active')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') nextImage();
+            if (e.key === 'ArrowLeft') prevImage();
+        });
+
+        // ===== 音乐控制 =====
         const bgm = document.getElementById('bgm');
         const musicToggle = document.getElementById('musicToggle');
         let isPlaying = false;
-
         document.addEventListener('DOMContentLoaded', () => {
             const p = bgm.play();
-            if (p !== undefined) {
-                p.then(() => { isPlaying = true; }).catch(() => { isPlaying = false; });
-            }
+            if (p !== undefined) { p.then(() => { isPlaying = true; }).catch(() => {}); }
         });
-
         musicToggle.addEventListener('click', () => {
             if (isPlaying) { bgm.pause(); musicToggle.textContent = '🔇'; }
             else { bgm.play(); musicToggle.textContent = '🎵'; }
             isPlaying = !isPlaying;
         });
 
-        // 飘落纸张
+        // ===== 飘落纸张 =====
         function createConfetti() {
             const container = document.getElementById('confettiContainer');
             const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
@@ -230,15 +300,11 @@
                 const confetti = document.createElement('div');
                 confetti.classList.add('confetti');
                 const size = Math.random() * 10 + 5;
-                const left = Math.random() * 100;
-                const duration = Math.random() * 5 + 5;
-                const delay = Math.random() * 5;
-                const color = colors[Math.floor(Math.random() * colors.length)];
                 confetti.style.width = size + 'px';
                 confetti.style.height = size + 'px';
-                confetti.style.backgroundColor = color;
-                confetti.style.left = left + 'vw';
-                confetti.style.animation = `fall ${duration}s linear ${delay}s infinite`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animation = `fall ${Math.random() * 5 + 5}s linear ${Math.random() * 5}s infinite`;
                 confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                 container.appendChild(confetti);
             }
